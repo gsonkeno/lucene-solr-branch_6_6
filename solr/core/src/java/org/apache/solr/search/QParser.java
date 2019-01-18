@@ -359,8 +359,8 @@ public abstract class QParser {
 
     parserName = parserName==null ? QParserPlugin.DEFAULT_QTYPE : parserName;
 
-    QParserPlugin qplug = req.getCore().getQueryPlugin(parserName);
-    QParser parser =  qplug.createParser(qstr, localParams, req.getParams(), req);
+    QParserPlugin qplug = req.getCore().getQueryPlugin(parserName);//可能ReRankQParserPlugin
+    QParser parser =  qplug.createParser(qstr, localParams, req.getParams(), req);//与上面对应，可能ReRankQParserPlugin.ReRankQParser
 
     parser.stringIncludingLocalParams = stringIncludingLocalParams;
     parser.valFollowedParams = valFollowedParams;

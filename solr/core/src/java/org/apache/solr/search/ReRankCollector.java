@@ -62,7 +62,7 @@ public class ReRankCollector extends TopDocsCollector {
     Sort sort = cmd.getSort();
     if(sort == null) {
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
-    } else {
+    } else {//如果有sort ,也是第一轮查询时有用
       sort = sort.rewrite(searcher);
       this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
     }
@@ -83,11 +83,11 @@ public class ReRankCollector extends TopDocsCollector {
   public boolean needsScores() {
     return true;
   }
-
+ //第一个参数表示分页查找时的偏移量，也就是从第几个开始返回，第一个参数表示返回多少个。
   public TopDocs topDocs(int start, int howMany) {
 
     try {
-
+      //默认情况下，howMany=length=10,而reRankDocs是url参数中指定的
       TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
 
       if(mainDocs.totalHits == 0 || mainDocs.scoreDocs.length == 0) {
@@ -95,7 +95,7 @@ public class ReRankCollector extends TopDocsCollector {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
-      ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
+      ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];//粗查的文档数量<重排的文档数量时，要取最小值
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
       mainDocs.scoreDocs = reRankScoreDocs;

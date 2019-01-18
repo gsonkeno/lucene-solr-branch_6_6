@@ -41,7 +41,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.reRankDocs = reRankDocs;
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
-
+  //this.mainQuery替换为粗排中的q参数
   public RankQuery wrap(Query _mainQuery) {
     if(_mainQuery != null){
       this.mainQuery = _mainQuery;

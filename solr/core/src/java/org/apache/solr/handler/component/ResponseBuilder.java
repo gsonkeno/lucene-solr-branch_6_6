@@ -438,7 +438,7 @@ public class ResponseBuilder
   /** Calls {@link RankQuery#wrap(Query)} if there's a rank query, otherwise just returns the query. */
   public Query wrap(Query q) {
     if(this.rankQuery != null) {
-      return this.rankQuery.wrap(q);
+      return this.rankQuery.wrap(q);//rankQuery包装下q参数
     } else {
       return q;
     }

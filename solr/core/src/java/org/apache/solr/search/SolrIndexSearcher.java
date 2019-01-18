@@ -1582,7 +1582,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = topCollector.getTotalHits();
-      TopDocs topDocs = topCollector.topDocs(0, len);
+      TopDocs topDocs = topCollector.topDocs(0, len);//他在使用topDocs方法的时候，没有使用start，而是仅仅使用了0，因为solr在分页的处理中是自己处理的，没有交给lucene！所以之前的那个howmany就是len，也就是start + rows
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
       maxScore = totalHits > 0 ? topDocs.getMaxScore() : 0.0f;

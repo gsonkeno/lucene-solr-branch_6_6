@@ -157,7 +157,7 @@ public class QueryComponent extends SearchComponent
     }
 
     try {
-      QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
+      QParser parser = QParser.getParser(rb.getQueryString(), defType, req);//LuceneQParser
       Query q = parser.getQuery();
       if (q == null) {
         // normalize a null query to a query that matches nothing
@@ -168,8 +168,8 @@ public class QueryComponent extends SearchComponent
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if(rankQueryString != null) {
-        QParser rqparser = QParser.getParser(rankQueryString, defType, req);
-        Query rq = rqparser.getQuery();
+        QParser rqparser = QParser.getParser(rankQueryString, defType, req);//示例 {!rerank reRankQuery=$rrq reRankDocs=100 reRankWeight=3}
+        Query rq = rqparser.getQuery();//可能是ReRankQParserPlugin.ReRankQuery类，如 {!rerank mainQuery='*:*' reRankQuery='title:solr' reRankDocs=100 reRankWeight=3.0}
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
           rb.setRankQuery(rankQuery);
@@ -543,7 +543,7 @@ public class QueryComponent extends SearchComponent
 
     // normal search result
     searcher.search(result, cmd);
-    rb.setResult(result);
+    rb.setResult(result);//result中是正常的搜索结果，但是并没有获取所有字段
 
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);

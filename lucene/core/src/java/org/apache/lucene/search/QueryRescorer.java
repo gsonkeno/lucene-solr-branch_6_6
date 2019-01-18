@@ -29,7 +29,7 @@ import org.apache.lucene.index.LeafReaderContext;
  *
  * @lucene.experimental */
 public abstract class QueryRescorer extends Rescorer {
-
+  /**第二轮的排序query**/
   private final Query query;
 
   /** Sole constructor, passing the 2nd pass query to
@@ -49,17 +49,17 @@ public abstract class QueryRescorer extends Rescorer {
 
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) throws IOException {
-    ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();
+    ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();//第一阶段查询文档
     Arrays.sort(hits,
                 new Comparator<ScoreDoc>() {
                   @Override
                   public int compare(ScoreDoc a, ScoreDoc b) {
                     return a.doc - b.doc;
-                  }
+                  }//对第一阶段查询先按docid升序排序
                 });
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-
+    // 使用第二轮排序的query进行重排
     Weight weight = searcher.createNormalizedWeight(query, true);
 
     // Now merge sort docIDs from hits, with reader's leaves:
@@ -69,14 +69,14 @@ public abstract class QueryRescorer extends Rescorer {
     int docBase = 0;
     Scorer scorer = null;
 
-    while (hitUpto < hits.length) {
+    while (hitUpto < hits.length) {//循环所有的第一轮收集到的doc
       ScoreDoc hit = hits[hitUpto];
       int docID = hit.doc;
       LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);
-        endDoc = readerContext.docBase + readerContext.reader().maxDoc();
+        endDoc = readerContext.docBase + readerContext.reader().maxDoc();//endDoc表示当前正在查找的段的最大的docid。
       }
 
       if (readerContext != null) {
@@ -92,7 +92,7 @@ public abstract class QueryRescorer extends Rescorer {
           actualDoc = scorer.iterator().advance(targetDoc);
         }
 
-        if (actualDoc == targetDoc) {
+        if (actualDoc == targetDoc) {//如果相等，表示第二次查询也命中了这个doc
           // Query did match this doc:
           hit.score = combine(hit.score, true, scorer.score());
         } else {
@@ -100,7 +100,7 @@ public abstract class QueryRescorer extends Rescorer {
           assert actualDoc > targetDoc;
           hit.score = combine(hit.score, false, 0.0f);
         }
-      } else {
+      } else {//如果在这个段中第二轮的qurry没有命中任何的结果，则一定不会命中这个doc了
         // Query did not match this doc:
         hit.score = combine(hit.score, false, 0.0f);
       }
@@ -128,7 +128,7 @@ public abstract class QueryRescorer extends Rescorer {
                   }
                 });
 
-    if (topN < hits.length) {
+    if (topN < hits.length) {//这个的意思是如果最后返回的额topN个（也就是start+rows）小于收集到的doc，则只取topN个。比如第一阶段收集了100个，但是分页显示每一页10个，只要第二页的10个，则topN是20，只要前面的20个即可。
       ScoreDoc[] subset = new ScoreDoc[topN];
       System.arraycopy(hits, 0, subset, 0, topN);
       hits = subset;
