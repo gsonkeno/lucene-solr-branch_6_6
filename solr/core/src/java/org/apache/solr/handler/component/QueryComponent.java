@@ -543,7 +543,7 @@ public class QueryComponent extends SearchComponent
 
     // normal search result
     searcher.search(result, cmd);
-    rb.setResult(result);//result中是正常的搜索结果，但是并没有获取所有字段
+    rb.setResult(result);//result中是正常的搜索结果，但是并没有获取所有字段,获取字段在哪里目前还不清楚
 
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);

@@ -83,13 +83,13 @@ public class ReRankCollector extends TopDocsCollector {
   public boolean needsScores() {
     return true;
   }
- //第一个参数表示分页查找时的偏移量，也就是从第几个开始返回，第一个参数表示返回多少个。
+ //第一个参数表示分页查找时的偏移量，也就是从第几个开始返回，第二个参数表示返回多少个。第一个参数往往是0
   public TopDocs topDocs(int start, int howMany) {
 
     try {
       //默认情况下，howMany=length=10,而reRankDocs是url参数中指定的
       TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
-
+      //第一轮搜索结果为0的话，直接返回
       if(mainDocs.totalHits == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
       }
@@ -132,7 +132,7 @@ public class ReRankCollector extends TopDocsCollector {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
-        return rescoredDocs;
+        return rescoredDocs; //返回重排后的文档
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);

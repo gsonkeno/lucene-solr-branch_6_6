@@ -1284,7 +1284,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key = null;
-    int maxDocRequested = cmd.getOffset() + cmd.getLen();
+    int maxDocRequested = cmd.getOffset() + cmd.getLen();//ui面板中start + row，从5开始请求，请求10个，需要从Lucene中搜索15个
     // check for overflow, and check for # docs in index
     if (maxDocRequested < 0 || maxDocRequested > maxDoc()) maxDocRequested = maxDoc();
     int supersetMaxDoc = maxDocRequested;
@@ -1518,7 +1518,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
+    Query query = QueryUtils.makeQueryable(cmd.getQuery());//可能是ReRankQParserPlugin$ReRankQuery
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     if (pf.filter != null) {
@@ -1577,7 +1577,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);//创建topN文档收集器，可能是ReRankCollector
       Collector collector = topCollector;
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
