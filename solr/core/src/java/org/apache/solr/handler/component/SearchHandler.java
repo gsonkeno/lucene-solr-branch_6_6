@@ -280,7 +280,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       subt.stop();
     }
 
-    if (!rb.isDistrib) {
+    if (!rb.isDistrib) {//单机请求处理方式
       // a normal non-distributed request
 
       long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
@@ -327,7 +327,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
-    } else {
+    } else {//分布式请求处理方式
       // a distributed request
 
       if (rb.outgoing == null) {
@@ -427,12 +427,14 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             // let the components see the responses to the request
             for(SearchComponent c : components) {
               c.handleResponses(rb, srsp.getShardRequest());
+              log.info("handleResponses c:" + c.getName() + ",rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs());
             }
           }
         }
 
         for(SearchComponent c : components) {
           c.finishStage(rb);
+          log.info("finishStage c:" + c.getName() + ",rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs());
         }
 
         // we are done when the next stage is MAX_VALUE

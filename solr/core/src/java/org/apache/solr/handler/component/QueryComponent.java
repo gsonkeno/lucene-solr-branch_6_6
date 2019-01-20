@@ -300,11 +300,12 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
-    LOG.debug("process: {}", rb.req.getParams());
+    LOG.info("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     if (!params.getBool(COMPONENT_NAME, true)) {
+      LOG.info(" !params.getBool(COMPONENT_NAME, true return process");
       return;
     }
     SolrIndexSearcher searcher = req.getSearcher();
@@ -314,6 +315,7 @@ public class QueryComponent extends SearchComponent
     int purpose = params.getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
     if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
       statsCache.returnLocalStats(rb, searcher);
+      LOG.info(" (purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0 return process");
       return;
     }
     // check if we need to update the local copy of global dfs
@@ -366,6 +368,7 @@ public class QueryComponent extends SearchComponent
 
       ResultContext ctx = new BasicResultContext(rb);
       rsp.addResponse(ctx);
+      LOG.info(" ids != null return process");
       return;
     }
 
@@ -420,6 +423,7 @@ public class QueryComponent extends SearchComponent
           rsp.add("firstPhase", commandHandler.processResult(result, serializer));
           rsp.add("totalHitCount", commandHandler.getTotalHitCount());
           rb.setResult(result);
+          LOG.info(" groupingSpec != null return process");
           return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
           CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
@@ -476,6 +480,7 @@ public class QueryComponent extends SearchComponent
           TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
           rsp.add("secondPhase", commandHandler.processResult(result, serializer));
           rb.setResult(result);
+          LOG.info(" params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false return process");
           return;
         }
 
@@ -535,6 +540,7 @@ public class QueryComponent extends SearchComponent
           rsp.add("grouped", result.groupedResults);
           rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
         }
+        LOG.info(" after rsp.getToLog().add(\"hits\", grouping.getCommands().get(0).getMatches()); return process");
         return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -543,6 +549,8 @@ public class QueryComponent extends SearchComponent
 
     // normal search result
     searcher.search(result, cmd);
+    LOG.info("QueryComponent process searcher.search, getDocList :" + result.getDocList() + ",getDocListAndSet :"
+    + result.getDocListAndSet() + ",getDocSet :" + result.getDocSet());
     rb.setResult(result);//result中是正常的搜索结果，但是并没有获取所有字段,获取字段在哪里目前还不清楚
 
     ResultContext ctx = new BasicResultContext(rb);
@@ -1351,8 +1359,10 @@ public class QueryComponent extends SearchComponent
           continue;
         }
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+        LOG.info("QueryComponent SolrDocumentList docs size is " + docs.size());
         for (SolrDocument doc : docs) {
           Object id = doc.getFieldValue(keyFieldName);
+          LOG.info("doc.toString: " + doc.toString() + " doc.values: " + doc.values());
           ShardDoc sdoc = rb.resultIds.get(id.toString());
           if (sdoc != null) {
             if (returnScores) {
