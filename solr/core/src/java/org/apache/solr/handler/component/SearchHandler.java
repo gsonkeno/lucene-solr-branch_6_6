@@ -402,6 +402,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
           boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
+          log.info("tolerant = "  + tolerant);
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp = tolerant ? 
                 shardHandler1.takeCompletedIncludingErrors():

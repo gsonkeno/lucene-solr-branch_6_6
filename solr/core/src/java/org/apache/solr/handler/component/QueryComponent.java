@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -805,6 +807,7 @@ public class QueryComponent extends SearchComponent
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
+
       returnFields(rb, sreq);
     }
   }
@@ -979,6 +982,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+      SolrIndexSearcher searcher = rb.req.getSearcher();
 
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
       if(mergeStrategies != null) {
@@ -1113,6 +1117,18 @@ public class QueryComponent extends SearchComponent
         for (int i=0; i<docs.size(); i++) {
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
+
+          try {
+            long begin = System.currentTimeMillis();
+            Document document = null;
+            document = searcher.doc(Integer.valueOf(id.toString()));
+            IndexableField field = document.getField("shop_name");
+            long end = System.currentTimeMillis();
+            LOG.info("id=" + id + ",shop_name=" + field +",use time" + (end-begin));
+          } catch (Exception e) {
+            LOG.error(e.getMessage(),e);
+            e.printStackTrace();
+          }
 
           String prevShard = uniqueDoc.put(id, srsp.getShard());
           if (prevShard != null) {
