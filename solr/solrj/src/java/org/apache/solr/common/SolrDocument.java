@@ -404,4 +404,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   public int getChildDocumentCount() {
     return _childDocuments.size();
   }
+
+
 }

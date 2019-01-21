@@ -338,17 +338,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       int nextStage = 0;
       do {
         rb.stage = nextStage;
-        nextStage = ResponseBuilder.STAGE_DONE;
+        nextStage = ResponseBuilder.STAGE_DONE;//nextStage如果为STAGE_DONE,则会跳出do while循环
 
         // call all components
         for( SearchComponent c : components ) {
           // the next stage is the minimum of what all components report
           nextStage = Math.min(nextStage, c.distributedProcess(rb));
+          log.info("SearchComponent c=" + c.getName() +", nextStage=" + nextStage);
         }
 
 
         // check the outgoing queue and send requests
-        while (rb.outgoing.size() > 0) {
+        log.info("rb.outgoing.size()=" + rb.outgoing.size());
+        while (rb.outgoing.size() > 0) {//集群方式搜索时，第一次不会进入该分支
 
           // submit all current request tasks at once
           while (rb.outgoing.size() > 0) {
@@ -390,7 +392,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   params.remove(CommonParams.QT);
                 }
               }
-              shardHandler1.submit(sreq, shard, params);
+              shardHandler1.submit(sreq, shard, params); //向多个节点提交搜索请求
+              log.info("shardHandler1.submit shard=" + shard + ",params=" + params);
             }
           }
 
@@ -423,11 +426,15 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             }
 
             rb.finished.add(srsp.getShardRequest());
+            log.info("after rb.finished.add,rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs());
 
             // let the components see the responses to the request
             for(SearchComponent c : components) {
+              log.info("before handleResponses c:" + c.getName() + ",rb.getResults():" + rb.getResults() +
+                  ",rb.getResponseDocs()" + rb.getResponseDocs() + ",rb.resultIds:" + rb.resultIds);
               c.handleResponses(rb, srsp.getShardRequest());
-              log.info("handleResponses c:" + c.getName() + ",rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs());
+              log.info("after handleResponses c:" + c.getName() + ",rb.getResults():" + rb.getResults() +
+                  ",rb.getResponseDocs()" + rb.getResponseDocs() + ",rb.resultIds:" + rb.resultIds);
             }
           }
         }

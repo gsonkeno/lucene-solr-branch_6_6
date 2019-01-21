@@ -152,6 +152,7 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.CallStack;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -2480,6 +2481,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     if (rsp.getToLog().size() > 0) {
       if (requestLog.isInfoEnabled()) {
         requestLog.info(rsp.getToLogAsString(logid));
+        CallStack.printCallStatck();
       }
 
       if (log.isWarnEnabled() && slowQueryThresholdMillis >= 0) {

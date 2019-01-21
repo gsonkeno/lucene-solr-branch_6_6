@@ -33,4 +33,12 @@ package org.apache.solr.search;
 public final class DocListAndSet {
   public DocList docList;
   public DocSet docSet;
+
+  @Override
+  public String toString() {
+    return "DocListAndSet{" +
+        "docList=" + docList +
+        ", docSet=" + docSet +
+        '}';
+  }
 }

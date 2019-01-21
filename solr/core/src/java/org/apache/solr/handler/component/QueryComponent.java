@@ -109,6 +109,7 @@ import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTran
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.search.stats.StatsCache;
+import org.apache.solr.util.CallStack;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -300,6 +301,7 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
+    CallStack.printCallStatck();
     LOG.info("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
@@ -559,19 +561,22 @@ public class QueryComponent extends SearchComponent
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
     if ( ! rb.req.getParams().getBool(ShardParams.IS_SHARD,false) ) {
+      LOG.info("rb.getNextCursorMark()==null?" + (rb.getNextCursorMark()==null));
       if (null != rb.getNextCursorMark()) {
         rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
                    rb.getNextCursorMark().getSerializedTotem());
       }
     }
 
+    LOG.info("rb.mergeFieldHandler == null?" + (rb.mergeFieldHandler == null));
     if(rb.mergeFieldHandler != null) {
       rb.mergeFieldHandler.handleMergeFields(rb, searcher);
     } else {
       doFieldSortValues(rb, searcher);
     }
-
+    LOG.info("before doPrefetch");
     doPrefetch(rb);
+    LOG.info("after doPrefetch");
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
@@ -695,8 +700,10 @@ public class QueryComponent extends SearchComponent
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     if (rb.grouping()) {
+      LOG.info("rb.grouping()=true");
       return groupedDistributedProcess(rb);
     } else {
+      LOG.info("rb.grouping()=false");
       return regularDistributedProcess(rb);
     }
   }
@@ -781,7 +788,16 @@ public class QueryComponent extends SearchComponent
 
   protected void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
+      LOG.info("before mergeIds, rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs()
+          + ",rb.resultIds:" +rb.resultIds);
+      LOG.info("before mergeIds, sreq:" + sreq.responses.size());
       mergeIds(rb, sreq);
+      LOG.info("after mergeIds, rb.getResults():" + rb.getResults() + ",rb.getResponseDocs()" + rb.getResponseDocs()
+          + ",rb.resultIds:" +rb.resultIds);
+      LOG.info("after mergeIds, sreq:" + sreq.responses.size());
+
+      CallStack.printCallStatck();
+
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
@@ -963,6 +979,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
       if(mergeStrategies != null) {
         Collections.sort(mergeStrategies, MergeStrategy.MERGE_COMP);
@@ -1013,6 +1030,7 @@ public class QueryComponent extends SearchComponent
         SolrDocumentList docs = null;
         NamedList<?> responseHeader = null;
 
+        LOG.info("shardInfo == null?" + (shardInfo == null));
         if(shardInfo!=null) {
           SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
           
@@ -1046,6 +1064,10 @@ public class QueryComponent extends SearchComponent
 
           shardInfo.add(srsp.getShard(), nl);
         }
+
+        LOG.info("mergeIds shardInfo:" + shardInfo);
+
+
         // now that we've added the shard info, let's only proceed if we have no error.
         if (srsp.getException() != null) {
           partialResults = true;
@@ -1054,6 +1076,7 @@ public class QueryComponent extends SearchComponent
 
         if (docs == null) { // could have been initialized in the shards info block above
           docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+          LOG.info("mergeIds docs are:" + docs);
         }
         
         if (responseHeader == null) { // could have been initialized in the shards info block above
@@ -1079,6 +1102,8 @@ public class QueryComponent extends SearchComponent
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());
         }
         numFound += docs.getNumFound();
+        LOG.info("mergeIds numFound=" + numFound);
+        LOG.info("mergeIds docs=" + docs);
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
@@ -1119,7 +1144,7 @@ public class QueryComponent extends SearchComponent
           }
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
-
+          LOG.info("mergeIds shardDoc=" + shardDoc);
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
@@ -1128,6 +1153,7 @@ public class QueryComponent extends SearchComponent
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
       int resultSize = queue.size() - ss.getOffset();
+      LOG.info("mergeIds queue.size=" + queue.size() + ",ss.getOffset=" + ss.getOffset() +",result.size=" + resultSize);
       resultSize = Math.max(0, resultSize);  // there may not be any docs in range
 
       Map<Object,ShardDoc> resultIds = new HashMap<>();
@@ -1138,6 +1164,7 @@ public class QueryComponent extends SearchComponent
         // be strings (like keys in highlighting, explain, etc)
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
+      LOG.info("mergeIds resultIds=" + resultIds);
 
       // Add hits for distributed requests
       // https://issues.apache.org/jira/browse/SOLR-3518
