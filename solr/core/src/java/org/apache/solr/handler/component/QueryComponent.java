@@ -975,6 +975,7 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+    LOG.info("mergeIds: {}", rb.req.getParams());
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
       Collections.sort(mergeStrategies, MergeStrategy.MERGE_COMP);
@@ -1021,9 +1022,10 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean partialResults = false;
     Boolean segmentTerminatedEarly = null;
-    //收集满足搜索条件的前300个元素需要进行打散
+    //收集满足搜索条件的前400个元素需要进行打散
     List<ShardDoc> shardDocList = new ArrayList<>();
     int shuffleTopN = 400;
+    int shuffleTopNS = shuffleTopN * sreq.responses.size();
 
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
@@ -1144,8 +1146,8 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
         LOG.info("mergeIds shardDoc=" + shardDoc);
-        //当查询起始偏移量小于等于shuffleTopN时，才会对前shuffleTopN个元素进行打散
-        if (ss.getOffset() <= shuffleTopN && shardDocList.size() < shuffleTopN) {
+        //当查询起始偏移量小于等于shuffleTopN时，才会对前shuffleTopN个元素进行打散,
+        if (ss.getOffset() <= shuffleTopN && shardDocList.size() < shuffleTopNS) {
           shardDocList.add(shardDoc);
         }
         //当查询起始偏移量大于shuffleTopN时，不会对前shuffleTopN个元素进行打散
@@ -1157,8 +1159,13 @@ public class QueryComponent extends SearchComponent {
     } // end for-each-response
 
 
-    if (shardDocList.size() == shuffleTopN) {
-      ShuffleUtils.shuffle(shardDocList, 3, 80, 3);
+    //shardDocList有元素，但是元素个数可能是不到shuffleTopN的
+    LOG.info("mergeIds shardDocList.size=" + shardDocList.size());
+    if (shardDocList.size()!=0) {
+      //当搜索个数达到shuffleTopNS时，才打散
+      if (shardDocList.size() == shuffleTopNS){
+        ShuffleUtils.shuffle(shardDocList, 3, 80, 3);
+      }
       for (ShardDoc doc : shardDocList) {
         queue.insertWithOverflow(doc);
       }
